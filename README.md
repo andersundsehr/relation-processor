@@ -14,7 +14,7 @@ It uses the `PageRepository->versionOL()` and `PageRepository->getLanguageOverla
 
 ### Example
 
-````typo3_typoscript
+````ts
 10 = AUS\RelationProcessor\DataProcessing\RelationProcessor
 10 {
     # this field is of the current table and will be used to determine the relation
@@ -25,7 +25,7 @@ It uses the `PageRepository->versionOL()` and `PageRepository->getLanguageOverla
 
 ### Advanced Example
 
-````typo3_typoscript
+````ts
 page = PAGE
 page.10 = FLUIDTEMPLATE
 page.10 {
