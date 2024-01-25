@@ -35,8 +35,9 @@ final readonly class RelationProcessor implements DataProcessorInterface
         $table = $cObj->getCurrentTable();
         $uid = $cObj->data['uid'];
         $field = $processorConfiguration['field'];
+        $sorting = $processorConfiguration['mm_sorting_field'] ?? '';
 
-        $relations = $this->getRelation($cObj, $table, $field, $uid);
+        $relations = $this->getRelation($cObj, $table, $field, $uid, $sorting);
         $request = $cObj->getRequest();
         $processedRecordVariables = [];
 
@@ -58,7 +59,7 @@ final readonly class RelationProcessor implements DataProcessorInterface
     /**
      * @return list<array<string, string|int|float|bool>>
      */
-    public function getRelation(ContentObjectRenderer $cObj, string $table, string $field, int $uid): array
+    public function getRelation(ContentObjectRenderer $cObj, string $table, string $field, int $uid, string $sorting): array
     {
         $tcaConfig = $GLOBALS['TCA'][$table]['columns'][$field]['config'] ?? throw new RuntimeException(
             'TCA config for ' . $table . '.' . $field . ' not found'
@@ -101,7 +102,9 @@ final readonly class RelationProcessor implements DataProcessorInterface
             ->from($foreignTable, 'relation')
             ->join('relation', $mmTable, 'mm', $queryBuilder->expr()->eq('relation.uid', 'mm.' . $otherField))
             ->where($queryBuilder->expr()->eq('mm.' . $selfField, $uid));
-
+        if ($sorting) {
+            $queryBuilder->orderBy($sorting);
+        }
 
         $transOrigPointerField = $GLOBALS['TCA'][$foreignTable]['ctrl']['transOrigPointerField'] ?? null;
         if ($transOrigPointerField) {
