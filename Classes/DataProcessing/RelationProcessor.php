@@ -35,9 +35,8 @@ final readonly class RelationProcessor implements DataProcessorInterface
         $table = $cObj->getCurrentTable();
         $uid = $cObj->data['uid'];
         $field = $processorConfiguration['field'];
-        $sorting = $processorConfiguration['mm_sorting_field'] ?? '';
 
-        $relations = $this->getRelation($cObj, $table, $field, $uid, $sorting);
+        $relations = $this->getRelation($cObj, $table, $field, $uid);
         $request = $cObj->getRequest();
         $processedRecordVariables = [];
 
@@ -59,65 +58,20 @@ final readonly class RelationProcessor implements DataProcessorInterface
     /**
      * @return list<array<string, string|int|float|bool>>
      */
-    public function getRelation(ContentObjectRenderer $cObj, string $table, string $field, int $uid, string $sorting): array
+    public function getRelation(ContentObjectRenderer $cObj, string $table, string $field, int $uid): array
     {
         $tcaConfig = $GLOBALS['TCA'][$table]['columns'][$field]['config'] ?? throw new RuntimeException(
             'TCA config for ' . $table . '.' . $field . ' not found'
         );
-        if (isset($tcaConfig['MM_hasUidField'])) {
-            throw new RuntimeException('TCA config MM_hasUidField not supported');
-        }
 
-        if (isset($tcaConfig['MM_is_foreign'])) {
-            throw new RuntimeException('TCA config MM_is_foreign not supported');
-        }
-
-        if (isset($tcaConfig['MM_oppositeUsage'])) {
-            throw new RuntimeException('TCA config MM_oppositeUsage not supported');
-        }
-
-        if (isset($tcaConfig['foreign_field'])) {
-            //inline not supported right now
-            throw new RuntimeException('TCA config foreign_field not supported');
-        }
-
-        $mmTable = $tcaConfig['MM'] ?? throw new RuntimeException('TCA config MM not found');
         $foreignTable = $tcaConfig['foreign_table'] ?? throw new RuntimeException('TCA config foreign_table not found');
 
-        $matchFields = $tcaConfig['MM_match_fields'] ?? [];
-
-        $otherWay = isset($tcaConfig['MM_opposite_field']);
-
-        if ($otherWay) {
-            $selfField = 'uid_foreign';
-            $otherField = 'uid_local';
+        if (isset($tcaConfig['foreign_field'])) {
+            $rows = $this->getRowsForeignField($tcaConfig, $uid);
         } else {
-            $selfField = 'uid_local';
-            $otherField = 'uid_foreign';
+            $rows = $this->getRowsMM($tcaConfig, $foreignTable, $uid);
         }
 
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($foreignTable);
-        $queryBuilder
-            ->select('relation.*')
-            ->from($foreignTable, 'relation')
-            ->join('relation', $mmTable, 'mm', $queryBuilder->expr()->eq('relation.uid', 'mm.' . $otherField))
-            ->where($queryBuilder->expr()->eq('mm.' . $selfField, $uid));
-        if ($sorting) {
-            $queryBuilder->orderBy($sorting);
-        }
-
-        $transOrigPointerField = $GLOBALS['TCA'][$foreignTable]['ctrl']['transOrigPointerField'] ?? null;
-        if ($transOrigPointerField) {
-            $queryBuilder->andWhere($queryBuilder->expr()->eq('relation.' . $transOrigPointerField, 0));
-        }
-
-        foreach ($matchFields as $matchField => $value) {
-            $queryBuilder->andWhere(
-                $queryBuilder->expr()->eq($matchField, $queryBuilder->createNamedParameter($value, Connection::PARAM_STR))
-            );
-        }
-
-        $rows = $queryBuilder->executeQuery()->fetchAllAssociative();
         $records = [];
 
         $pageRepository = $cObj->getTypoScriptFrontendController()?->sys_page;
@@ -142,5 +96,90 @@ final readonly class RelationProcessor implements DataProcessorInterface
         }
 
         return $records;
+    }
+
+    /**
+     * @param array<string, mixed> $tcaConfig
+     * @return list<array<string, string|int|float|bool>>
+     */
+    private function getRowsForeignField(array $tcaConfig, int $uid): array
+    {
+        $foreignTable = $tcaConfig['foreign_table'];
+        $foreignField = $tcaConfig['foreign_field'];
+        $foreignSortby = $tcaConfig['foreign_sortby'] ?? null;
+        $maxitems = (int)($tcaConfig['maxitems'] ?? 0);
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($foreignTable);
+        $queryBuilder
+            ->select('*')
+            ->from($foreignTable)
+            ->where($queryBuilder->expr()->eq($foreignField, $uid));
+
+        if ($foreignSortby) {
+            $queryBuilder->orderBy($foreignSortby);
+        }
+
+        if ($maxitems) {
+            $queryBuilder->setMaxResults($maxitems);
+        }
+
+        return $queryBuilder->executeQuery()->fetchAllAssociative();
+    }
+
+    /**
+     * @return list<array<string, string|int|float|bool>>
+     */
+    private function getRowsMM(mixed $tcaConfig, mixed $foreignTable, int $uid): array
+    {
+        if (isset($tcaConfig['MM_hasUidField'])) {
+            throw new RuntimeException('TCA config MM_hasUidField not supported');
+        }
+
+        if (isset($tcaConfig['MM_is_foreign'])) {
+            throw new RuntimeException('TCA config MM_is_foreign not supported');
+        }
+
+        if (isset($tcaConfig['MM_oppositeUsage'])) {
+            throw new RuntimeException('TCA config MM_oppositeUsage not supported');
+        }
+
+        $mmTable = $tcaConfig['MM'] ?? throw new RuntimeException('TCA config MM not found');
+
+        $matchFields = $tcaConfig['MM_match_fields'] ?? [];
+        $sorting = $tcaConfig['mm_sorting_field'] ?? '';
+
+        $otherWay = isset($tcaConfig['MM_opposite_field']);
+
+        if ($otherWay) {
+            $selfField = 'uid_foreign';
+            $otherField = 'uid_local';
+        } else {
+            $selfField = 'uid_local';
+            $otherField = 'uid_foreign';
+        }
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($foreignTable);
+        $queryBuilder
+            ->select('relation.*')
+            ->from($foreignTable, 'relation')
+            ->join('relation', $mmTable, 'mm', $queryBuilder->expr()->eq('relation.uid', 'mm.' . $otherField))
+            ->where($queryBuilder->expr()->eq('mm.' . $selfField, $uid));
+
+        if ($sorting) {
+            $queryBuilder->orderBy($sorting);
+        }
+
+        $transOrigPointerField = $GLOBALS['TCA'][$foreignTable]['ctrl']['transOrigPointerField'] ?? null;
+        if ($transOrigPointerField) {
+            $queryBuilder->andWhere($queryBuilder->expr()->eq('relation.' . $transOrigPointerField, 0));
+        }
+
+        foreach ($matchFields as $matchField => $value) {
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->eq($matchField, $queryBuilder->createNamedParameter($value, Connection::PARAM_STR))
+            );
+        }
+
+        return $queryBuilder->executeQuery()->fetchAllAssociative();
     }
 }
