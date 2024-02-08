@@ -146,16 +146,17 @@ final readonly class RelationProcessor implements DataProcessorInterface
         $mmTable = $tcaConfig['MM'] ?? throw new RuntimeException('TCA config MM not found');
 
         $matchFields = $tcaConfig['MM_match_fields'] ?? [];
-        $sorting = $tcaConfig['mm_sorting_field'] ?? '';
 
         $otherWay = isset($tcaConfig['MM_opposite_field']);
 
         if ($otherWay) {
             $selfField = 'uid_foreign';
             $otherField = 'uid_local';
+            $sorting = 'sorting_foreign';
         } else {
             $selfField = 'uid_local';
             $otherField = 'uid_foreign';
+            $sorting = 'sorting';
         }
 
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable($foreignTable);
@@ -163,11 +164,8 @@ final readonly class RelationProcessor implements DataProcessorInterface
             ->select('relation.*')
             ->from($foreignTable, 'relation')
             ->join('relation', $mmTable, 'mm', $queryBuilder->expr()->eq('relation.uid', 'mm.' . $otherField))
-            ->where($queryBuilder->expr()->eq('mm.' . $selfField, $uid));
-
-        if ($sorting) {
-            $queryBuilder->orderBy($sorting);
-        }
+            ->where($queryBuilder->expr()->eq('mm.' . $selfField, $uid))
+            ->orderBy('mm.' . $sorting);
 
         $transOrigPointerField = $GLOBALS['TCA'][$foreignTable]['ctrl']['transOrigPointerField'] ?? null;
         if ($transOrigPointerField) {
