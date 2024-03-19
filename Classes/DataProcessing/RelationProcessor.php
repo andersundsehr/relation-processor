@@ -13,11 +13,11 @@ use TYPO3\CMS\Frontend\ContentObject\ContentDataProcessor;
 use TYPO3\CMS\Frontend\ContentObject\ContentObjectRenderer;
 use TYPO3\CMS\Frontend\ContentObject\DataProcessorInterface;
 
-final readonly class RelationProcessor implements DataProcessorInterface
+final class RelationProcessor implements DataProcessorInterface
 {
     public function __construct(
-        private ConnectionPool $connectionPool,
-        private ContentDataProcessor $contentDataProcessor
+        private readonly ConnectionPool $connectionPool,
+        private readonly ContentDataProcessor $contentDataProcessor
     ) {
     }
 
