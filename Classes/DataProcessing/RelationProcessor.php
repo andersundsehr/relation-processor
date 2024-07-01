@@ -67,9 +67,11 @@ final class RelationProcessor implements DataProcessorInterface
         $foreignTable = $tcaConfig['foreign_table'] ?? throw new RuntimeException('TCA config foreign_table not found');
 
         if (isset($tcaConfig['foreign_field'])) {
-            $rows = $this->getRowsForeignField($tcaConfig, $uid);
-        } else {
+            $rows = $this->getRowsForeignField($tcaConfig, $foreignTable, $uid);
+        } elseif (isset($tcaConfig['MM'])) {
             $rows = $this->getRowsMM($tcaConfig, $foreignTable, $uid);
+        } else {
+            $rows = $this->getRowsLocalField($tcaConfig, $foreignTable, $table, $field, $uid);
         }
 
         $records = [];
@@ -102,9 +104,8 @@ final class RelationProcessor implements DataProcessorInterface
      * @param array<string, mixed> $tcaConfig
      * @return list<array<string, string|int|float|bool>>
      */
-    private function getRowsForeignField(array $tcaConfig, int $uid): array
+    private function getRowsForeignField(array $tcaConfig, string $foreignTable, int $uid): array
     {
-        $foreignTable = $tcaConfig['foreign_table'];
         $foreignField = $tcaConfig['foreign_field'];
         $foreignSortby = $tcaConfig['foreign_sortby'] ?? null;
         $maxitems = (int)($tcaConfig['maxitems'] ?? 0);
@@ -117,6 +118,45 @@ final class RelationProcessor implements DataProcessorInterface
 
         if ($foreignSortby) {
             $queryBuilder->orderBy($foreignSortby);
+        }
+
+        if ($maxitems) {
+            $queryBuilder->setMaxResults($maxitems);
+        }
+
+        return $queryBuilder->executeQuery()->fetchAllAssociative();
+    }
+
+    /**
+     * @param array<string, mixed> $tcaConfig
+     * @return list<array<string, string|int|float|bool>>
+     */
+    private function getRowsLocalField(array $tcaConfig, string $foreignTable, string $table, string $field, int $uid): array
+    {
+        $maxitems = (int)($tcaConfig['maxitems'] ?? 0);
+        if (($tcaConfig['renderType'] ?? null) === 'selectSingle') {
+            $maxitems = 1;
+        }
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable($foreignTable);
+        $expr = $queryBuilder->expr();
+        $whereUidMatched = $expr->inSet('local.' . $field, $queryBuilder->quoteIdentifier('relation.uid'), true);
+        if ($maxitems === 1) {
+            $whereUidMatched = $expr->eq('local.' . $field, $queryBuilder->quoteIdentifier('relation.uid'));
+        }
+
+        $queryBuilder
+            ->select('relation.*')
+            ->from($foreignTable, 'relation')
+            ->join(
+                'relation',
+                $table,
+                'local',
+                (string)$expr->and($whereUidMatched, $expr->eq('local.uid', $uid))
+            );
+
+        if ($maxitems !== 1) {
+            $queryBuilder->getConcreteQueryBuilder()->orderBy($whereUidMatched);
         }
 
         if ($maxitems) {
