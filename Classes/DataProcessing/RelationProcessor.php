@@ -13,11 +13,11 @@ use TYPO3\CMS\Frontend\ContentObject\ContentDataProcessor;
 use TYPO3\CMS\Frontend\ContentObject\ContentObjectRenderer;
 use TYPO3\CMS\Frontend\ContentObject\DataProcessorInterface;
 
-final class RelationProcessor implements DataProcessorInterface
+final readonly class RelationProcessor implements DataProcessorInterface
 {
     public function __construct(
-        private readonly ConnectionPool $connectionPool,
-        private readonly ContentDataProcessor $contentDataProcessor
+        private ConnectionPool $connectionPool,
+        private ContentDataProcessor $contentDataProcessor
     ) {
     }
 
@@ -42,7 +42,8 @@ final class RelationProcessor implements DataProcessorInterface
 
         foreach ($relations as $key => $record) {
             $recordContentObjectRenderer = GeneralUtility::makeInstance(ContentObjectRenderer::class);
-            $recordContentObjectRenderer->start($record, $GLOBALS['TCA'][$table]['columns'][$field]['config']['foreign_table'], $request);
+            $recordContentObjectRenderer->setRequest($request);
+            $recordContentObjectRenderer->start($record, $GLOBALS['TCA'][$table]['columns'][$field]['config']['foreign_table']);
             $processedRecordVariables[$key] = ['data' => $record];
             $processedRecordVariables[$key] = $this->contentDataProcessor->process(
                 $recordContentObjectRenderer,
@@ -61,10 +62,11 @@ final class RelationProcessor implements DataProcessorInterface
     public function getRelation(ContentObjectRenderer $cObj, string $table, string $field, int $uid): array
     {
         $tcaConfig = $GLOBALS['TCA'][$table]['columns'][$field]['config'] ?? throw new RuntimeException(
-            'TCA config for ' . $table . '.' . $field . ' not found'
+            'TCA config for ' . $table . '.' . $field . ' not found',
+            9447139781
         );
 
-        $foreignTable = $tcaConfig['foreign_table'] ?? throw new RuntimeException('TCA config foreign_table not found');
+        $foreignTable = $tcaConfig['foreign_table'] ?? throw new RuntimeException('TCA config foreign_table not found', 4960954942);
 
         if (isset($tcaConfig['foreign_field'])) {
             $rows = $this->getRowsForeignField($tcaConfig, $foreignTable, $uid);
@@ -77,7 +79,7 @@ final class RelationProcessor implements DataProcessorInterface
         $records = [];
 
         $pageRepository = $cObj->getTypoScriptFrontendController()?->sys_page;
-        $pageRepository instanceof PageRepository ?: throw new RuntimeException('PageRepository not found');
+        $pageRepository instanceof PageRepository ?: throw new RuntimeException('PageRepository not found', 4904331429);
 
         foreach ($rows as $row) {
             // Versioning preview:
@@ -172,18 +174,18 @@ final class RelationProcessor implements DataProcessorInterface
     private function getRowsMM(mixed $tcaConfig, mixed $foreignTable, int $uid): array
     {
         if (isset($tcaConfig['MM_hasUidField'])) {
-            throw new RuntimeException('TCA config MM_hasUidField not supported');
+            throw new RuntimeException('TCA config MM_hasUidField not supported', 5983628871);
         }
 
         if (isset($tcaConfig['MM_is_foreign'])) {
-            throw new RuntimeException('TCA config MM_is_foreign not supported');
+            throw new RuntimeException('TCA config MM_is_foreign not supported', 9865861365);
         }
 
         if (isset($tcaConfig['MM_oppositeUsage'])) {
-            throw new RuntimeException('TCA config MM_oppositeUsage not supported');
+            throw new RuntimeException('TCA config MM_oppositeUsage not supported', 5536564928);
         }
 
-        $mmTable = $tcaConfig['MM'] ?? throw new RuntimeException('TCA config MM not found');
+        $mmTable = $tcaConfig['MM'] ?? throw new RuntimeException('TCA config MM not found', 3744368881);
 
         $matchFields = $tcaConfig['MM_match_fields'] ?? [];
 
