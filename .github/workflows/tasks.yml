@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: [ '8.2', '8.3', '8.4' ]
+        php: [ '8.2', '8.3', '8.4', '8.5' ]
         typo3: [ '12', '13' ]
     steps:
       - name: Setup PHP with PECL extension
@@ -23,6 +23,9 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.php }}-composer-
-      - run: composer require typo3/minimal="^${{ matrix.typo3 }}" --dev --ignore-platform-req=php+
-      - run: composer install --no-interaction --no-progress --ignore-platform-req=php+
+      # CI-only alias: TYPO3 still requires ~0.22; 1.0.0 fixes its security advisories.
+      # Remove the alias when TYPO3 accepts ^1.0.
+      - run: TYPO3_SKIP_ASSET_PUBLISH=true composer require typo3/minimal="^${{ matrix.typo3 }}" "enshrined/svg-sanitize:1.0.0 as 0.22.99" --dev --no-scripts -W
+      - run: composer install --no-interaction --no-progress
+      - run: bash tests/typo3-svg-sanitizer.sh
       - run: ./vendor/bin/grumphp run --ansi
