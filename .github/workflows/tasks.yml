@@ -9,8 +9,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: [ '8.2', '8.3', '8.4' ]
+        php: [ '8.2', '8.3', '8.4', '8.5' ]
         typo3: [ '12', '13' ]
+    env:
+      COMPOSER_AUTH: ${{ secrets.TYPO3_ELTS_COMPOSER_AUTH }}
     steps:
       - name: Setup PHP with PECL extension
         uses: shivammathur/setup-php@v2
@@ -23,6 +25,14 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.php }}-composer-
-      - run: composer require typo3/minimal="^${{ matrix.typo3 }}" --dev --ignore-platform-req=php+
-      - run: composer install --no-interaction --no-progress --ignore-platform-req=php+
+      # CI-only alias: TYPO3 still requires ~0.22; 1.0.0 fixes its security advisories.
+      # Remove the alias when TYPO3 accepts ^1.0.
+      - name: Configure TYPO3 ELTS when an authorized test license is available
+        if: (matrix.typo3 == '11' || matrix.typo3 == '12') && vars.TYPO3_ELTS_REPOSITORY_URL != ''
+        env:
+          TYPO3_ELTS_REPOSITORY_URL: ${{ vars.TYPO3_ELTS_REPOSITORY_URL }}
+        run: composer config --global repositories.typo3-elts composer "$TYPO3_ELTS_REPOSITORY_URL"
+      - run: TYPO3_SKIP_ASSET_PUBLISH=true composer require typo3/minimal="^${{ matrix.typo3 }}" "enshrined/svg-sanitize:1.0.0 as 0.22.99" --dev --no-scripts --sort-packages -W
+      - run: composer install --no-interaction --no-progress
+      - run: bash tests/typo3-svg-sanitizer.sh
       - run: ./vendor/bin/grumphp run --ansi
