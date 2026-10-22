@@ -6,9 +6,9 @@
   ],
   "type": "typo3-cms-extension",
   "require": {
-    "php": "~8.2.0 || ~8.3.0 || ~8.4.0",
-    "typo3/cms-core": "^12.4 || ^13.4",
-    "typo3/cms-frontend": "^12.4 || ^13.4"
+    "php": "~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0",
+    "typo3/cms-core": "^13.4",
+    "typo3/cms-frontend": "^13.4"
   },
   "require-dev": {
     "pluswerk/grumphp-config": "^7.2.0 || ^10.1.4",
