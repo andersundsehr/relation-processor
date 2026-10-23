@@ -6,12 +6,13 @@
   ],
   "type": "typo3-cms-extension",
   "require": {
-    "php": "~8.2.0 || ~8.3.0 || ~8.4.0",
+    "php": "~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0",
     "typo3/cms-core": "^12.4 || ^13.4",
     "typo3/cms-frontend": "^12.4 || ^13.4"
   },
   "require-dev": {
-    "pluswerk/grumphp-config": "^7.2.0 || ^10.1.4",
+    "phpunit/phpunit": "^9.6.31 || ^10.5.62",
+    "pluswerk/grumphp-config": "^7.2.0 || ^10.1.4 || ^11.2.0",
     "saschaegerer/phpstan-typo3": "^1.10.2 || ^2.1.1",
     "ssch/typo3-rector": "*"
   },
@@ -20,8 +21,14 @@
       "AUS\\RelationProcessor\\": "Classes/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "AUS\\RelationProcessor\\Tests\\": "Tests/"
+    }
+  },
   "config": {
     "allow-plugins": {
+      "a9f/fractor-extension-installer": true,
       "ergebnis/composer-normalize": true,
       "phpro/grumphp": true,
       "phpstan/extension-installer": true,
@@ -35,5 +42,8 @@
     "typo3/cms": {
       "extension-key": "relation_processor"
     }
+  },
+  "scripts": {
+    "test": "@php vendor/bin/phpunit --bootstrap vendor/autoload.php Tests/Unit/"
   }
 }

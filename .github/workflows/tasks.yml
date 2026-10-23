@@ -26,3 +26,64 @@ jobs:
       - run: composer require typo3/minimal="^${{ matrix.typo3 }}" --dev --ignore-platform-req=php+
       - run: composer install --no-interaction --no-progress --ignore-platform-req=php+
       - run: ./vendor/bin/grumphp run --ansi
+  compatibility:
+    name: 'Compatibility PHP ${{ matrix.php }} / TYPO3 ${{ matrix.typo3 }} / ${{ matrix.dependencies }}'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          -
+            php: '8.2'
+            typo3: '12'
+            dependencies: latest
+          -
+            php: '8.3'
+            typo3: '12'
+            dependencies: latest
+          -
+            php: '8.4'
+            typo3: '12'
+            dependencies: latest
+          -
+            php: '8.2'
+            typo3: '12'
+            dependencies: lowest
+          -
+            php: '8.2'
+            typo3: '13'
+            dependencies: latest
+          -
+            php: '8.3'
+            typo3: '13'
+            dependencies: latest
+          -
+            php: '8.4'
+            typo3: '13'
+            dependencies: latest
+          -
+            php: '8.5'
+            typo3: '13'
+            dependencies: latest
+          -
+            php: '8.2'
+            typo3: '13'
+            dependencies: lowest
+          -
+            php: '8.5'
+            typo3: '13'
+            dependencies: lowest
+    steps:
+      -
+        uses: actions/checkout@v4
+      -
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '${{ matrix.php }}'
+          extensions: 'apcu, bcmath, gd, intl, mbstring, pdo_sqlite, sqlite3, zip'
+          coverage: pcov
+          tools: 'composer:v2'
+          ini-values: 'apc.enable_cli=1, memory_limit=1G'
+      -
+        name: 'Resolve and check compatibility'
+        run: 'sh Build/Scripts/check-compatibility.sh ${{ matrix.php }} ${{ matrix.typo3 }} ${{ matrix.dependencies }}'

@@ -7,6 +7,7 @@ use Rector\Config\RectorConfig;
 use Rector\Caching\ValueObject\Storage\FileCacheStorage;
 
 return static function (RectorConfig $rectorConfig): void {
+    $rectorConfig->phpVersion(80200);
     $rectorConfig->parallel();
     $rectorConfig->importNames();
     $rectorConfig->importShortClasses();
