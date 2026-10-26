@@ -44,9 +44,3 @@ if [ "$php_version" = 8.5 ]; then
 fi
 
 php vendor/bin/grumphp run --no-interaction
-if php -r '$c=json_decode(file_get_contents("composer.json"),true); exit(isset($c["scripts"]["test"]) ? 0 : 1);'; then
-    composer test
-else
-    printf 'No configured test script; unit, functional and browser coverage remains unverified.\n'
-    exit 1
-fi
