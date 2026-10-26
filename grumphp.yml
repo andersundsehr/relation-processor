@@ -5,7 +5,7 @@ grumphp:
     enabled: false
 parameters:
   convention.process_timeout: 240
-  convention.security_checker_blocking: false
+  convention.security_checker_blocking: true
   convention.jsonlint_ignore_pattern: {  }
   convention.xmllint_ignore_pattern: {  }
   convention.yamllint_ignore_pattern: {  }

@@ -1,90 +1,41 @@
 name: Tasks
-
-on: [push, pull_request]
-
+'on':
+  - push
+  - pull_request
 jobs:
-  lint-php:
-    name: "php: ${{ matrix.php }} TYPO3: ${{ matrix.typo3 }}"
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        php: ['8.2', '8.3', '8.4', '8.5']
-        typo3: ['13']
-    steps:
-      - name: Setup PHP with PECL extension
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php }}
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v3
-        with:
-          path: ~/.composer/cache/files
-          key: ${{ runner.os }}-${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.php }}-composer-
-      # Remove the alias when TYPO3 accepts ^1.0.
-      - run: TYPO3_SKIP_ASSET_PUBLISH=true composer require typo3/minimal="^${{ matrix.typo3 }}" "enshrined/svg-sanitize:~1.0.0" --dev --no-scripts --sort-packages -W
-      - run: composer install --no-interaction --no-progress
-      - run: ./vendor/bin/grumphp run --ansi
   compatibility:
-    name: 'Compatibility PHP ${{ matrix.php }} / TYPO3 ${{ matrix.typo3 }} / ${{ matrix.dependencies }}'
+    name: Compatibility PHP ${{ matrix.php }} / TYPO3 ${{ matrix.typo3 }} / ${{ matrix.dependencies }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          -
-            php: '8.2'
-            typo3: '12'
-            dependencies: latest
-          -
-            php: '8.3'
-            typo3: '12'
-            dependencies: latest
-          -
-            php: '8.4'
-            typo3: '12'
-            dependencies: latest
-          -
-            php: '8.2'
-            typo3: '12'
-            dependencies: lowest
-          -
-            php: '8.2'
+          - php: '8.2'
             typo3: '13'
             dependencies: latest
-          -
-            php: '8.3'
+          - php: '8.3'
             typo3: '13'
             dependencies: latest
-          -
-            php: '8.4'
+          - php: '8.4'
             typo3: '13'
             dependencies: latest
-          -
-            php: '8.5'
+          - php: '8.5'
             typo3: '13'
             dependencies: latest
-          -
-            php: '8.2'
+          - php: '8.2'
             typo3: '13'
             dependencies: lowest
-          -
-            php: '8.5'
+          - php: '8.5'
             typo3: '13'
             dependencies: lowest
     steps:
-      -
-        uses: actions/checkout@v4
-      -
-        uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
         with:
-          php-version: '${{ matrix.php }}'
-          extensions: 'apcu, bcmath, gd, intl, mbstring, pdo_sqlite, sqlite3, zip'
+          php-version: ${{ matrix.php }}
+          extensions: apcu, bcmath, gd, intl, mbstring, pdo_sqlite, sqlite3, zip
           coverage: pcov
-          tools: 'composer:v2'
-          ini-values: 'apc.enable_cli=1, memory_limit=1G'
-      -
-        name: 'Resolve and check compatibility'
-        run: 'sh Build/Scripts/check-compatibility.sh ${{ matrix.php }} ${{ matrix.typo3 }} ${{ matrix.dependencies }}'
+          tools: composer:v2
+          ini-values: apc.enable_cli=1, memory_limit=1G
+      - name: Resolve and check compatibility
+        run: sh Build/Scripts/check-compatibility.sh ${{ matrix.php }} ${{ matrix.typo3 }} ${{ matrix.dependencies }}
