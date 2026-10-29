@@ -4,36 +4,38 @@ on: [push, pull_request]
 
 jobs:
   lint-php:
-    name: "PHP ${{ matrix.php }} / TYPO3 13"
+    name: "php: ${{ matrix.php }} TYPO3: ${{ matrix.typo3 }}${{ matrix.composer_flags && ' (lowest)' || '' }}"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.2', '8.3', '8.4', '8.5']
+        include:
+          - php: '8.2'
+            typo3: '13'
+          - php: '8.3'
+            typo3: '13'
+          - php: '8.4'
+            typo3: '13'
+          - php: '8.5'
+            typo3: '13'
+          - php: '8.2'
+            typo3: '13'
+            composer_flags: '--prefer-lowest --prefer-stable'
+          - php: '8.5'
+            typo3: '13'
+            composer_flags: '--prefer-lowest --prefer-stable'
     steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
+      - name: Setup PHP with PECL extension
+        uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: apcu, bcmath, gd, intl, mbstring, pdo_sqlite, sqlite3, zip
-          ini-values: apc.enable_cli=1, memory_limit=1G
-      - run: composer require "typo3/minimal:^13.4" --dev --no-interaction -W
-      - run: vendor/bin/grumphp run --ansi
-
-  lowest-dependencies:
-    name: "Lowest dependencies / PHP ${{ matrix.php }} / TYPO3 13"
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        php: ['8.2', '8.5']
-    steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
         with:
-          php-version: ${{ matrix.php }}
-          extensions: apcu, bcmath, gd, intl, mbstring, pdo_sqlite, sqlite3, zip
-          ini-values: apc.enable_cli=1, memory_limit=1G
-      - run: composer require "typo3/minimal:^13.4" --dev --no-update --no-interaction
-      - run: composer update --prefer-lowest --prefer-stable --no-interaction -W
-      - run: vendor/bin/grumphp run --ansi
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.php }}-composer-
+      - run: composer require typo3/minimal="^${{ matrix.typo3 }}.4" --dev --no-update --no-interaction
+      - run: composer update --with-all-dependencies --no-interaction --no-progress ${{ matrix.composer_flags }}
+      - run: ./vendor/bin/grumphp run --ansi
