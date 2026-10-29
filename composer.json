@@ -11,7 +11,7 @@
     "typo3/cms-frontend": "^13.4"
   },
   "require-dev": {
-    "pluswerk/grumphp-config": "^7.2.0 || ^10.1.4 || ^11.2.0",
+    "pluswerk/grumphp-config": "^11.2.0",
     "saschaegerer/phpstan-typo3": "^1.10.2 || ^2.1.1",
     "ssch/typo3-rector": "*"
   },

@@ -6,7 +6,6 @@ use PLUS\GrumPHPConfig\RectorSettings;
 use Rector\Config\RectorConfig;
 
 return static function (RectorConfig $rectorConfig): void {
-    $rectorConfig->phpVersion(80200);
     $rectorConfig->parallel();
     $rectorConfig->importNames();
     $rectorConfig->importShortClasses();
