@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   lint-php:
-    name: "php: ${{ matrix.php }} TYPO3: ${{ matrix.typo3 }}${{ matrix.composer_flags && ' (lowest)' || '' }}"
+    name: "php: ${{ matrix.php }} TYPO3: ${{ matrix.typo3 }}"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -18,12 +18,6 @@ jobs:
             typo3: '13'
           - php: '8.5'
             typo3: '13'
-          - php: '8.2'
-            typo3: '13'
-            composer_flags: '--prefer-lowest --prefer-stable'
-          - php: '8.5'
-            typo3: '13'
-            composer_flags: '--prefer-lowest --prefer-stable'
     steps:
       - name: Setup PHP with PECL extension
         uses: shivammathur/setup-php@v2
@@ -36,5 +30,5 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.php }}-composer-
-      - run: composer require typo3/minimal="^${{ matrix.typo3 }}.4" --dev --with-all-dependencies --no-interaction --no-progress ${{ matrix.composer_flags }}
+      - run: composer require typo3/minimal="^${{ matrix.typo3 }}.4" --dev --with-all-dependencies --no-interaction --no-progress
       - run: ./vendor/bin/grumphp run --ansi
